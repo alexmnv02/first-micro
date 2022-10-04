@@ -1,0 +1,120 @@
+version: '3.6'
+
+services:
+  # POSTGRES
+  catalog-postgres-auth:
+    image: postgres:14.1
+    networks:
+      - octory-network
+    container_name: authentication_db-v01
+    restart: unless-stopped
+    ports:
+      - "6432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - /home/octory-db/authentication_db:/var/octory/data/authentication
+      # copy the sql script to create DB
+      - ./sql/create_db_auth.sql:/docker-entrypoint-initdb.d/create_db_auth.sql
+
+  catalog-postgres-content:
+    image: postgres:14.1
+    networks:
+      - octory-network
+    container_name: content_db-v01
+    restart: unless-stopped
+    ports:
+      - "6433:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - /home/octory-db/content_db:/var/octory/data/content
+      # copy the sql script to create DB
+      - ./sql/create_db_catalog.sql:/docker-entrypoint-initdb.d/create_db_catalog.sql
+
+  # МИКРОСЕРВИСЫ
+  catalog-email:
+    image: ${OCTORY_MS_EMAIL_IMAGE}
+    networks:
+      - octory-network
+    restart: unless-stopped
+    container_name: catalog-email-v01
+    environment:
+      - SMTP_HOST=smtp.mail.ru
+      - SMTP_PORT=465
+      - SMTP_USERNAME=tech_support@octory.ru
+      - SMTP_PASSWORD=Jesus$$1985
+    ports:
+      - "9500:9500"
+
+  catalog-web:
+    image: ${OCTORY_MS_WEB_IMAGE}
+    networks:
+      - octory-network
+    restart: unless-stopped
+    container_name: catalog-web-v01
+    ports:
+      - "9021:80"
+
+  catalog-authentication:
+    image: ${OCTORY_MS_AUTH_IMAGE}
+    networks:
+      - octory-network
+    restart: unless-stopped
+    depends_on:
+      - catalog-postgres-auth
+      - catalog-email
+    container_name: catalog-authentication-v01
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://catalog-postgres-auth:5432/authentication
+      - EMAIL_SCHEMA=http
+      - EMAIL_HOST=catalog-email
+      - EMAIL_PORT=8080
+
+  catalog-content:
+    image: ${OCTORY_MS_CONTENT_IMAGE}
+    networks:
+      - octory-network
+    restart: unless-stopped
+    depends_on:
+      - catalog-postgres-content
+      - catalog-authentication
+    container_name: catalog-content-v01
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-content:5432/content
+      - AUTHENTICATION_SCHEMA=http
+      - AUTHENTICATION_HOST=marketplace-authentication
+      - AUTHENTICATION_PORT=9007
+
+  # GATEWAY
+  catalog-proxy:
+    image: ${OCTORY_MS_PROXY_IMAGE}
+    networks:
+      - octory-network
+    restart: unless-stopped
+    depends_on:
+      - catalog-authentication
+      #      - marketplace-converter
+      - catalog-content
+    #      - marketplace-orders
+    container_name: catalog-proxy-v01
+    environment:
+      - CONVERTER_SCHEMA=http
+      - CONVERTER_HOST=converter
+      - CONVERTER_PORT=9007
+      - CONTENT_SCHEMA=http
+      - CONTENT_HOST=content
+      - CONTENT_PORT=9006
+      - AUTHENTICATION_SCHEMA=http
+      - AUTHENTICATION_HOST=catalog-authentication
+      - AUTHENTICATION_PORT=9003
+      - ORDERS_SCHEMA=http
+      - ORDERS_HOST=orders
+      - ORDERS_PORT=9008
+    ports:
+      - "9001:9001"
+
+networks:
+  octory-network:
