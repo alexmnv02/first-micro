@@ -13,3 +13,5 @@ For further reference, please consider the following sections:
 
 Настройка фронта Security
 https://github.com/SaiUpadhyayula/spring-security-oauth2-keycloak-demo/
+добавить библиоткеку 
+angular-oauth2-odbi
