@@ -15,3 +15,5 @@ For further reference, please consider the following sections:
 https://github.com/SaiUpadhyayula/spring-security-oauth2-keycloak-demo/
 добавить библиоткеку 
 angular-oauth2-odbi
+Так же показан обмен токенами между микросервисами используя устраревшую технологию RestTamplate 
+и новую WebClient
