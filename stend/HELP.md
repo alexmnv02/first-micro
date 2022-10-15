@@ -20,3 +20,7 @@ angular-oauth2-odbi
 Так же показан обмен токенами между микросервисами используя устраревшую технологию RestTamplate 
 и новую WebClient
 
+
+
+Еще одни курс по микросервисам с Keycloak
+https://github.com/SaiUpadhyayula/springboot-microservices-project
